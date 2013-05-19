@@ -1,9 +1,10 @@
-qmarkpg -- psycopg with qmark flavour
-=====================================
+A psycopg2 wrapper using qmark/named parameters styles
+======================================================
 
-This package is a psycopg2_ wrapper, allowing the use of "qmark" placeholders
-style for positional arguments (i.e. ``?`` instead of ``%s``) and "named"
-placeholders for mapped arguments (i.e. ``:name`` instead of ``%(name)s``.
+The qmarkpg package is a psycopg2_ wrapper allowing the use of "qmark"
+placeholders style for positional arguments (i.e. ``?`` instead of ``%s``) and
+"named" placeholders for mapped arguments (i.e. ``:name`` instead of
+``%(name)s``.
 
 This package is a proof of concept: adopting qmark/named placeholders is not
 in program for future psycopg versions. Some multi-database environment may
