@@ -1,5 +1,5 @@
 """
-A psycopg2 wrapper using qmark parameters styles
+A psycopg2 wrapper using the qmark parameters style
 """
 
 # Copyright (C) 2013 Daniele Varrazzo  <daniele.varrazzo@gmail.com>

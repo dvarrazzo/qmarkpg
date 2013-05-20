@@ -1,5 +1,5 @@
-A psycopg2 wrapper using qmark parameters styles
-================================================
+A psycopg2 wrapper using the qmark parameters style
+===================================================
 
 The qmarkpg package is a psycopg2_ wrapper allowing the use of "qmark"
 placeholders style for query arguments (i.e. ``?`` instead of ``%s``).
