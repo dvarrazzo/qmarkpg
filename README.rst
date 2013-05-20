@@ -1,13 +1,16 @@
-A psycopg2 wrapper using qmark/named parameters styles
-======================================================
+A psycopg2 wrapper using qmark parameters styles
+================================================
 
 The qmarkpg package is a psycopg2_ wrapper allowing the use of "qmark"
-placeholders style for positional arguments (i.e. ``?`` instead of ``%s``) and
-"named" placeholders for mapped arguments (i.e. ``:name`` instead of
-``%(name)s``.
+placeholders style for query arguments (i.e. ``?`` instead of ``%s``).
+There is no support for parameters dictionaries: only positional parameters
+are allowed.
 
-This package is a proof of concept: adopting qmark/named placeholders is not
-in program for future psycopg versions. Some multi-database environment may
-find such placeholder styles more useful for cross-database compatibility.
+Adopting "qmark" and dropping support for "format" (*i.e.* ``%s``) and
+"pyformat" (*i.e.* ``%(name)s``) placeholders is not in program for future
+Psycopg versions; however, maintainers of multi-database environments may find
+the "qmark" placeholder style more useful for cross-database compatibility:
+this module is designed to support such requirement without requiring
+extensive rewriting of application directly using psycopg2.
 
 .. _psycopg2: http://initd.org/psycopg/

@@ -1,5 +1,5 @@
 """
-A psycopg2 wrapper using qmark/named parameters styles
+A psycopg2 wrapper using qmark parameters styles
 """
 
 # Copyright (C) 2013 Daniele Varrazzo  <daniele.varrazzo@gmail.com>
@@ -14,106 +14,79 @@ A psycopg2 wrapper using qmark/named parameters styles
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 # License for more details.
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 import re
-from collections import Mapping, Sequence
 
 # Import everything from psycopg2, then override something
 from psycopg2 import *
 from psycopg2.extensions import connection as _connection, cursor as _cursor
-paramstyle = 'named' # or qmark? whatever.
+paramstyle = 'qmark'
 _connect = connect
 
-RE_NAMED = re.compile(r'::|%|:[a-zA-Z0-9_]+')
 RE_QMARK = re.compile(r'\?\?|\?|%')
 
-def convert_params(query, args):
+def convert_params(query):
     """
-    Convert a qmark query into "format" or a named query into "pyformat".
-
-    I'm not sure it is possible to disambiguate the two query styles, I'm not
-    even sure anybody has tried showing it is possible or the contrary. So we
-    try to infer from the args which type of arguments the query has.
+    Convert a "qmark" query into "format" style.
     """
-    if args is None:
-        # no placeholder here
-        return query
+    def sub_sequence(m):
+        s = m.group(0)
+        if s == '??':
+            return '?'
+        if s == '%':
+            return '%%'
+        else:
+            return '%s'
 
-    elif isinstance(args, Mapping):
-        def sub_mapping(m):
-            s = m.group(0)
-            if s == '::':
-                return ':'
-            if s == '%':
-                return '%%'
-            else:
-                return '%%(%s)s' % s[1:]
-
-        return RE_NAMED.sub(sub_mapping, query)
-
-    elif isinstance(args, Sequence):
-        def sub_sequence(m):
-            s = m.group(0)
-            if s == '??':
-                return '?'
-            if s == '%':
-                return '%%'
-            else:
-                return '%s'
-
-        return RE_QMARK.sub(sub_sequence, query)
-
-    else:
-        raise TypeError('expected a sequence or mapping argument')
+    return RE_QMARK.sub(sub_sequence, query)
 
 
-class QmarkNamedConnection(_connection):
+class QmarkConnection(_connection):
     """
-    A connection returning `QmarkNamedCursor` by default.
+    A connection returning `QmarkCursor` by default.
     """
     def cursor(self, *args, **kwargs):
-        kwargs.setdefault('cursor_factory', QmarkNamedCursor)
-        return super(QmarkNamedConnection, self).cursor(*args, **kwargs)
+        kwargs.setdefault('cursor_factory', QmarkCursor)
+        return super(QmarkConnection, self).cursor(*args, **kwargs)
 
 
-class QmarkNamedCursor(_cursor):
+class QmarkCursor(_cursor):
     """
-    A cursor using "qmark" or "named" placeholders for queries.
+    A cursor using "qmark" placeholders for queries.
     """
     def execute(self, query, args=None):
-        query = convert_params(query, args)
-        return super(QmarkNamedCursor, self).execute(query, args)
+        query = convert_params(query)
+        if args is None:
+            # to make sure the conversion %% -> % is performed
+            args = ()
+        return super(QmarkCursor, self).execute(query, args)
 
     def executemany(self, query, args_seq):
-        # pull out the first args to help sniffing the placeholder
-        args_seq = iter(args_seq)
-        try:
-            args = args_seq.next()
-        except StopIteration:
-            return
-
-        # helper to re-join the first args and the others in a single iterator
-        def join(args, args_seq):
-            yield args
+        def denullify(args_seq):
             for args in args_seq:
-                yield args
+                if args is not None:
+                    yield args
+                else:
+                    yield ()
 
-        query = convert_params(query, args)
-        return super(QmarkNamedCursor, self).executemany(
-            query, join(args, args_seq))
+        query = convert_params(query)
+        return super(QmarkCursor, self).executemany(
+            query, denullify(args_seq))
 
     def callproc(self, query, args=None):
-        query = convert_params(query, args)
-        return super(QmarkNamedCursor, self).callproc(query, args)
+        query = convert_params(query)
+        if args is None:
+            args = ()
+        return super(QmarkCursor, self).callproc(query, args)
 
 
 def connect(*args, **kwargs):
     """
     Return a new database connection.
 
-    The connection class is QmarkNamedConnection unless the connection_factory
+    The connection class is QmarkConnection unless the connection_factory
     parameter is overridden.
     """
-    kwargs.setdefault('connection_factory', QmarkNamedConnection)
+    kwargs.setdefault('connection_factory', QmarkConnection)
     return _connect(*args, **kwargs)
